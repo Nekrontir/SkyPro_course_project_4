@@ -17,6 +17,25 @@
     <tbody>
     {% for mailing in mailings %}
     <tr>
+        <td>
+            {% if request.user.profile.is_manager and mailing.status != 'finished' %}
+            <form method="post" action="{% url 'mailing:mailing_deactivate' mailing.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-danger" title="Принудительно завершить">⏹️</button>
+            </form>
+            {% endif %}
+            <a href="{% url 'mailing:mailing_detail' mailing.pk %}" class="btn btn-sm btn-outline-info" title="Просмотр">👁️</a>
+            {% if recipient.owner == request.user or request.user.is_superuser %}
+            <a href="{% url 'mailing:mailing_update' mailing.pk %}" class="btn btn-sm btn-outline-primary" title="Редактировать">✏️</a>
+            <a href="{% url 'mailing:mailing_delete' mailing.pk %}" class="btn btn-sm btn-outline-danger" title="Удалить">🗑️</a>
+            {% endif %}
+            {% if mailing.status == 'started' %}
+            <form method="post" action="{% url 'mailing:mailing_send' mailing.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-success" title="Отправить сейчас">▶️</button>
+            </form>
+            {% endif %}
+        </td>
         <td>{{ mailing.message.topic }}</td>
         <td>{{ mailing.start_time|date:"d.m.Y H:i" }}</td>
         <td>{{ mailing.end_time|date:"d.m.Y H:i" }}</td>
@@ -27,23 +46,6 @@
             <span class="badge bg-success">{{ mailing.status_display }}</span>
             {% elif mailing.status == 'finished' %}
             <span class="badge bg-info">{{ mailing.status_display }}</span>
-            {% endif %}
-        </td>
-        <td>
-            {% if request.user.profile.is_manager and mailing.status != 'finished' %}
-            <form method="post" action="{% url 'mailing:mailing_deactivate' mailing.pk %}" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-danger" title="Принудительно завершить">⏹️</button>
-            </form>
-            {% endif %}
-            <a href="{% url 'mailing:mailing_detail' mailing.pk %}" class="btn btn-sm btn-outline-info" title="Просмотр">👁️</a>
-            <a href="{% url 'mailing:mailing_update' mailing.pk %}" class="btn btn-sm btn-outline-primary" title="Редактировать">✏️</a>
-            <a href="{% url 'mailing:mailing_delete' mailing.pk %}" class="btn btn-sm btn-outline-danger" title="Удалить">🗑️</a>
-            {% if mailing.status == 'started' %}
-            <form method="post" action="{% url 'mailing:mailing_send' mailing.pk %}" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-sm btn-success" title="Отправить сейчас">▶️</button>
-            </form>
             {% endif %}
         </td>
     </tr>

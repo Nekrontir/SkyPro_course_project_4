@@ -17,6 +17,11 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'mailing:message_list' %}">Сообщения</a>
                 </li>
+                {% if user.is_superuser or user.profile.is_manager %}
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'mailing:user_list' %}">Пользователи</a>
+                </li>
+                {% endif %}
                 <li class="nav-item">
                     <span class="nav-link text-light">{{ user.email }}</span>
                 </li>

@@ -1,25 +1,28 @@
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.urls import reverse_lazy
-from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView, TemplateView
-from django.views import View
-from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
-from .models import Attempt, MailingRecipient, Message, Mailing
-from .forms import RecipientForm, MessageForm, MailingForm
 from django.core.cache import cache
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse_lazy
+from django.views import View
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, TemplateView, UpdateView
+
+from .forms import MailingForm, MessageForm, RecipientForm
+from .models import Attempt, Mailing, MailingRecipient, Message
 
 
 def is_manager_or_superuser(user):
     """Вспомогательная проверка для менеджеров и суперпользователей."""
-    return user.is_superuser or (hasattr(user, 'profile') and user.profile.is_manager)
+    return user.is_superuser or (hasattr(user, "profile") and user.profile.is_manager)
 
 
+# ============================
 # CRUD для получателей
+# ============================
 class RecipientListView(LoginRequiredMixin, ListView):
     model = MailingRecipient
-    template_name = 'mailing/recipient_list.html'
-    context_object_name = 'recipients'
+    template_name = "mailing/recipient_list.html"
+    context_object_name = "recipients"
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -31,40 +34,58 @@ class RecipientListView(LoginRequiredMixin, ListView):
 class RecipientCreateView(LoginRequiredMixin, CreateView):
     model = MailingRecipient
     form_class = RecipientForm
-    template_name = 'mailing/recipient_form.html'
-    success_url = reverse_lazy('mailing:recipient_list')
+    template_name = "mailing/recipient_form.html"
+    success_url = reverse_lazy("mailing:recipient_list")
 
     def form_valid(self, form):
         form.instance.owner = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        # Сброс кеша статистики после создания получателя
+        cache.delete(f"home_stats_{self.request.user.pk}")
+        cache.delete(f"statistics_{self.request.user.pk}")
+        return response
 
 
 class RecipientUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = MailingRecipient
     form_class = RecipientForm
-    template_name = 'mailing/recipient_form.html'
-    success_url = reverse_lazy('mailing:recipient_list')
+    template_name = "mailing/recipient_form.html"
+    success_url = reverse_lazy("mailing:recipient_list")
 
     def test_func(self):
         obj = self.get_object()
         return self.request.user.is_superuser or obj.owner == self.request.user
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        cache.delete(f"home_stats_{self.request.user.pk}")
+        cache.delete(f"statistics_{self.request.user.pk}")
+        return response
 
 
 class RecipientDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = MailingRecipient
-    template_name = 'mailing/recipient_confirm_delete.html'
-    success_url = reverse_lazy('mailing:recipient_list')
+    template_name = "mailing/recipient_confirm_delete.html"
+    success_url = reverse_lazy("mailing:recipient_list")
 
     def test_func(self):
         obj = self.get_object()
         return self.request.user.is_superuser or obj.owner == self.request.user
 
+    def delete(self, request, *args, **kwargs):
+        response = super().delete(request, *args, **kwargs)
+        cache.delete(f"home_stats_{request.user.pk}")
+        cache.delete(f"statistics_{request.user.pk}")
+        return response
 
+
+# ============================
 # CRUD для Сообщений
+# ============================
 class MessageListView(LoginRequiredMixin, ListView):
     model = Message
-    template_name = 'mailing/message_list.html'
-    context_object_name = 'messages'
+    template_name = "mailing/message_list.html"
+    context_object_name = "messages"
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -76,40 +97,57 @@ class MessageListView(LoginRequiredMixin, ListView):
 class MessageCreateView(LoginRequiredMixin, CreateView):
     model = Message
     form_class = MessageForm
-    template_name = 'mailing/message_form.html'
-    success_url = reverse_lazy('mailing:message_list')
+    template_name = "mailing/message_form.html"
+    success_url = reverse_lazy("mailing:message_list")
 
     def form_valid(self, form):
         form.instance.owner = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        cache.delete(f"home_stats_{self.request.user.pk}")
+        cache.delete(f"statistics_{self.request.user.pk}")
+        return response
 
 
 class MessageUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Message
     form_class = MessageForm
-    template_name = 'mailing/message_form.html'
-    success_url = reverse_lazy('mailing:message_list')
+    template_name = "mailing/message_form.html"
+    success_url = reverse_lazy("mailing:message_list")
 
     def test_func(self):
         obj = self.get_object()
         return self.request.user.is_superuser or obj.owner == self.request.user
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        cache.delete(f"home_stats_{self.request.user.pk}")
+        cache.delete(f"statistics_{self.request.user.pk}")
+        return response
 
 
 class MessageDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Message
-    template_name = 'mailing/message_confirm_delete.html'
-    success_url = reverse_lazy('mailing:message_list')
+    template_name = "mailing/message_confirm_delete.html"
+    success_url = reverse_lazy("mailing:message_list")
 
     def test_func(self):
         obj = self.get_object()
         return self.request.user.is_superuser or obj.owner == self.request.user
 
+    def delete(self, request, *args, **kwargs):
+        response = super().delete(request, *args, **kwargs)
+        cache.delete(f"home_stats_{request.user.pk}")
+        cache.delete(f"statistics_{request.user.pk}")
+        return response
 
+
+# ============================
 # CRUD для Рассылок
+# ============================
 class MailingListView(LoginRequiredMixin, ListView):
     model = Mailing
-    template_name = 'mailing/mailing_list.html'
-    context_object_name = 'mailings'
+    template_name = "mailing/mailing_list.html"
+    context_object_name = "mailings"
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -121,23 +159,26 @@ class MailingListView(LoginRequiredMixin, ListView):
 class MailingCreateView(LoginRequiredMixin, CreateView):
     model = Mailing
     form_class = MailingForm
-    template_name = 'mailing/mailing_form.html'
-    success_url = reverse_lazy('mailing:mailing_list')
+    template_name = "mailing/mailing_form.html"
+    success_url = reverse_lazy("mailing:mailing_list")
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
+        kwargs["user"] = self.request.user
         return kwargs
 
     def form_valid(self, form):
         form.instance.owner = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        cache.delete(f"home_stats_{self.request.user.pk}")
+        cache.delete(f"statistics_{self.request.user.pk}")
+        return response
 
 
 class MailingDetailView(LoginRequiredMixin, DetailView):
     model = Mailing
-    template_name = 'mailing/mailing_detail.html'
-    context_object_name = 'mailing'
+    template_name = "mailing/mailing_detail.html"
+    context_object_name = "mailing"
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -154,8 +195,8 @@ class MailingDetailView(LoginRequiredMixin, DetailView):
 class MailingUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Mailing
     form_class = MailingForm
-    template_name = 'mailing/mailing_form.html'
-    success_url = reverse_lazy('mailing:mailing_list')
+    template_name = "mailing/mailing_form.html"
+    success_url = reverse_lazy("mailing:mailing_list")
 
     def test_func(self):
         obj = self.get_object()
@@ -163,46 +204,62 @@ class MailingUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
 
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
-        kwargs['user'] = self.request.user
+        kwargs["user"] = self.request.user
         return kwargs
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        cache.delete(f"home_stats_{self.request.user.pk}")
+        cache.delete(f"statistics_{self.request.user.pk}")
+        return response
 
 
 class MailingDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Mailing
-    template_name = 'mailing/mailing_confirm_delete.html'
-    success_url = reverse_lazy('mailing:mailing_list')
+    template_name = "mailing/mailing_confirm_delete.html"
+    success_url = reverse_lazy("mailing:mailing_list")
 
     def test_func(self):
         obj = self.get_object()
         return self.request.user.is_superuser or obj.owner == self.request.user
 
+    def delete(self, request, *args, **kwargs):
+        response = super().delete(request, *args, **kwargs)
+        cache.delete(f"home_stats_{request.user.pk}")
+        cache.delete(f"statistics_{request.user.pk}")
+        return response
 
+
+# ============================
 # Отправка рассылки
+# ============================
 class MailingSendView(LoginRequiredMixin, UserPassesTestMixin, View):
     def test_func(self):
-        mailing = get_object_or_404(Mailing, pk=self.kwargs['pk'])
+        mailing = get_object_or_404(Mailing, pk=self.kwargs["pk"])
         return self.request.user.is_superuser or mailing.owner == self.request.user
 
     def post(self, request, *args, **kwargs):
-        mailing = get_object_or_404(Mailing, pk=self.kwargs['pk'])
+        mailing = get_object_or_404(Mailing, pk=self.kwargs["pk"])
         try:
             success, failure = mailing.send()
             messages.success(request, f"Рассылка завершена. Успешно: {success}, ошибок: {failure}.")
-            cache.delete(f'home_stats_{mailing.owner.pk}')
-            cache.delete(f'statistics_{mailing.owner.pk}')
+            cache.delete(f"home_stats_{mailing.owner.pk}")
+            cache.delete(f"statistics_{mailing.owner.pk}")
         except ValueError as e:
             messages.error(request, str(e))
-        return redirect('mailing:mailing_list')
+        return redirect("mailing:mailing_list")
 
 
-# Главная страница
+# ============================
+# Главная страница и Статистика
+# ============================
 class HomeView(LoginRequiredMixin, TemplateView):
-    template_name = 'mailing/home.html'
+    template_name = "mailing/home.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        cache_key = f'home_stats_{user.pk}'
+        cache_key = f"home_stats_{user.pk}"
 
         data = cache.get(cache_key)
         if data is None:
@@ -214,9 +271,9 @@ class HomeView(LoginRequiredMixin, TemplateView):
                 recipients = MailingRecipient.objects.filter(owner=user)
 
             data = {
-                'total_mailings': mailings.count(),
-                'active_mailings': mailings.filter(status=Mailing.STATUS_STARTED).count(),
-                'unique_recipients': recipients.distinct().count(),
+                "total_mailings": mailings.count(),
+                "active_mailings": mailings.filter(status=Mailing.STATUS_STARTED).count(),
+                "unique_recipients": recipients.distinct().count(),
             }
             cache.set(cache_key, data, 60 * 15)  # 15 минут
 
@@ -225,12 +282,12 @@ class HomeView(LoginRequiredMixin, TemplateView):
 
 
 class StatisticsView(LoginRequiredMixin, TemplateView):
-    template_name = 'mailing/statistics.html'
+    template_name = "mailing/statistics.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
-        cache_key = f'statistics_{user.pk}'
+        cache_key = f"statistics_{user.pk}"
 
         data = cache.get(cache_key)
         if data is None:
@@ -242,11 +299,11 @@ class StatisticsView(LoginRequiredMixin, TemplateView):
                 total_mailings = Mailing.objects.filter(owner=user).count()
 
             data = {
-                'total_attempts': attempts.count(),
-                'successful_attempts': attempts.filter(status='success').count(),
-                'failed_attempts': attempts.filter(status='failure').count(),
-                'total_sent': attempts.filter(status='success').count(),
-                'total_mailings': total_mailings,
+                "total_attempts": attempts.count(),
+                "successful_attempts": attempts.filter(status="success").count(),
+                "failed_attempts": attempts.filter(status="failure").count(),
+                "total_sent": attempts.filter(status="success").count(),
+                "total_mailings": total_mailings,
             }
             cache.set(cache_key, data, 60 * 15)
 
@@ -254,11 +311,13 @@ class StatisticsView(LoginRequiredMixin, TemplateView):
         return context
 
 
+# ============================
 # Менеджерские представления
+# ============================
 class UserListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
     model = User
-    template_name = 'mailing/user_list.html'
-    context_object_name = 'users'
+    template_name = "mailing/user_list.html"
+    context_object_name = "users"
 
     def test_func(self):
         return is_manager_or_superuser(self.request.user)
@@ -275,10 +334,27 @@ class ToggleUserActiveView(LoginRequiredMixin, UserPassesTestMixin, View):
         user = get_object_or_404(User, pk=pk)
         user.is_active = not user.is_active
         user.save()
-        messages.success(request, f"Пользователь {user.email} {'заблокирован' if not user.is_active else 'разблокирован'}.")
-        cache.delete(f'home_stats_{request.user.pk}')
-        cache.delete(f'statistics_{request.user.pk}')
-        return redirect('mailing:user_list')
+        messages.success(
+            request, f"Пользователь {user.email} {'заблокирован' if not user.is_active else 'разблокирован'}."
+        )
+        cache.delete(f"home_stats_{request.user.pk}")
+        cache.delete(f"statistics_{request.user.pk}")
+        return redirect("mailing:user_list")
+
+
+class ToggleManagerStatusView(LoginRequiredMixin, UserPassesTestMixin, View):
+    """Переключить статус менеджера у пользователя"""
+
+    def test_func(self):
+        return is_manager_or_superuser(self.request.user)
+
+    def post(self, request, pk):
+        user = get_object_or_404(User, pk=pk)
+        profile = user.profile
+        profile.is_manager = not profile.is_manager
+        profile.save()
+        messages.success(request, f"Статус менеджера для {user.email} изменён.")
+        return redirect("mailing:user_list")
 
 
 class MailingDeactivateView(LoginRequiredMixin, UserPassesTestMixin, View):
@@ -290,6 +366,6 @@ class MailingDeactivateView(LoginRequiredMixin, UserPassesTestMixin, View):
         mailing.status = Mailing.STATUS_FINISHED
         mailing.save()
         messages.success(request, f"Рассылка {mailing.pk} принудительно завершена.")
-        cache.delete(f'home_stats_{mailing.owner.pk}')
-        cache.delete(f'statistics_{mailing.owner.pk}')
-        return redirect('mailing:mailing_list')
+        cache.delete(f"home_stats_{mailing.owner.pk}")
+        cache.delete(f"statistics_{mailing.owner.pk}")
+        return redirect("mailing:mailing_list")

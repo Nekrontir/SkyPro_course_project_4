@@ -18,8 +18,10 @@
         <td>{{ message.topic }}</td>
         <td>{{ message.created_at|date:"d.m.Y H:i" }}</td>
         <td>
+            {% if recipient.owner == request.user or request.user.is_superuser %}
             <a href="{% url 'mailing:message_update' message.pk %}" class="btn btn-sm btn-outline-primary">✏️</a>
             <a href="{% url 'mailing:message_delete' message.pk %}" class="btn btn-sm btn-outline-danger">🗑️</a>
+            {% endif %}
         </td>
     </tr>
     {% empty %}

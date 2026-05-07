@@ -14,6 +14,7 @@
     <tbody>
     {% for user in users %}
     <tr>
+        {% if not user.is_superuser %}
         <td>{{ user.email }}</td>
         <td>{% if user.profile.is_manager %}Менеджер{% else %}Пользователь{% endif %}</td>
         <td>
@@ -23,6 +24,7 @@
             <span class="badge bg-danger">Заблокирован</span>
             {% endif %}
         </td>
+
         <td>
             <form method="post" action="{% url 'mailing:toggle_user_active' user.pk %}" style="display:inline;">
                 {% csrf_token %}
@@ -30,7 +32,14 @@
                     {% if user.is_active %}Заблокировать{% else %}Разблокировать{% endif %}
                 </button>
             </form>
+            <form method="post" action="{% url 'mailing:toggle_manager' user.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-info">
+                    {% if user.profile.is_manager %}Снять менеджера{% else %}Сделать менеджером{% endif %}
+                </button>
+            </form>
         </td>
+        {% endif %}
     </tr>
     {% endfor %}
     </tbody>
