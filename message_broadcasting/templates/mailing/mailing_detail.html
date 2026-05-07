@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Просмотр рассылки{% endblock %}
+{% block content %}
+<h1>Рассылка: {{ mailing.message.topic }}</h1>
+
+<p>
+    <strong>Статус:</strong>
+    {% if mailing.status == 'created' %}
+    <span class="badge bg-secondary">{{ mailing.status_display }}</span>
+    {% elif mailing.status == 'started' %}
+    <span class="badge bg-success">{{ mailing.status_display }}</span>
+    {% elif mailing.status == 'finished' %}
+    <span class="badge bg-info">{{ mailing.status_display }}</span>
+    {% endif %}
+</p>
+<p><strong>Начало:</strong> {{ mailing.start_time|date:"d.m.Y H:i" }}</p>
+<p><strong>Окончание:</strong> {{ mailing.end_time|date:"d.m.Y H:i" }}</p>
+<p><strong>Сообщение:</strong> {{ mailing.message.topic }}</p>
+<p><strong>Тело письма:</strong><br>{{ mailing.message.body|linebreaks }}</p>
+<p><strong>Получатели:</strong></p>
+<ul>
+    {% for recipient in mailing.recipients.all %}
+    <li>{{ recipient.full_name }} ({{ recipient.email }})</li>
+    {% empty %}
+    <li>Нет получателей</li>
+    {% endfor %}
+</ul>
+
+<a href="{% url 'mailing:mailing_list' %}" class="btn btn-secondary">Назад</a>
+{% if {% if mailing.status == 'started' %}
+    <form method="post" action="{% url 'mailing:mailing_send' mailing.pk %}" style="display:inline;">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success">Отправить сейчас</button>
+    </form>
+{% endif %}
+{% endblock %}

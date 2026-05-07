@@ -1,9 +1,14 @@
 from django.core.exceptions import ValidationError
+from django.core.mail import send_mail
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.conf import settings
+import logging
 
-# Create your models here.
+
+logger = logging.getLogger(__name__)
+
 
 class MailingRecipient(models.Model):
     email = models.EmailField(unique=True, max_length=254, verbose_name= "Email")
@@ -92,6 +97,52 @@ class Mailing(models.Model):
 
     def __str__(self):
         return f"Рассылка от {self.start_time} ({self.status_display})"
+
+    def send(self):
+        """Отправляет рассылку всем получателям, создавая записи Attempt."""
+        now = timezone.now()
+        if now < self.start_time:
+            raise ValueError("Рассылка ещё не началась.")
+        if now > self.end_time:
+            raise ValueError("Время рассылки истекло.")
+
+        self.update_status()
+        if self.status != self.STATUS_STARTED:
+            raise ValueError(f"Рассылка не может быть отправлена. Текущий статус: {self.get_status_display()}")
+
+        recipients = self.recipients.all()
+        if not recipients.exists():
+            raise ValueError("Нет получателей для отправки.")
+
+        success_count = 0
+        failure_count = 0
+
+        for recipient in recipients:
+            try:
+                send_mail(
+                    subject=self.message.topic,
+                    message=self.message.body,
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[recipient.email],
+                    fail_silently=False,
+                )
+                Attempt.objects.create(
+                    mailing=self,
+                    status='success',
+                    server_response='OK'
+                )
+                success_count += 1
+            except Exception as e:
+                Attempt.objects.create(
+                    mailing=self,
+                    status='failure',
+                    server_response=str(e)
+                )
+                failure_count += 1
+                logger.error(f"Ошибка отправки письма для {recipient.email}: {e}")
+
+        return success_count, failure_count
+
 
 class Attempt(models.Model):
     mailing = models.ForeignKey(Mailing, on_delete=models.CASCADE, related_name='attempts')
