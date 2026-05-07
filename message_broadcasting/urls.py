@@ -4,6 +4,11 @@ from . import views
 app_name = 'mailing'
 
 urlpatterns = [
+    path('', views.HomeView.as_view(), name='home'),
+    path('users/', views.UserListView.as_view(), name='user_list'),
+    path('users/<int:pk>/toggle-active/', views.ToggleUserActiveView.as_view(), name='toggle_user_active'),
+    path('mailings/<int:pk>/deactivate/', views.MailingDeactivateView.as_view(), name='mailing_deactivate'),
+
     # Получатели
     path('recipients/', views.RecipientListView.as_view(), name='recipient_list'),
     path('recipients/create/', views.RecipientCreateView.as_view(), name='recipient_create'),

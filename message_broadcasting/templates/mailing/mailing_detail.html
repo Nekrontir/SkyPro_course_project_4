@@ -27,7 +27,7 @@
 </ul>
 
 <a href="{% url 'mailing:mailing_list' %}" class="btn btn-secondary">Назад</a>
-{% if {% if mailing.status == 'started' %}
+{% if mailing.status == 'started' %}
     <form method="post" action="{% url 'mailing:mailing_send' mailing.pk %}" style="display:inline;">
         {% csrf_token %}
         <button type="submit" class="btn btn-success">Отправить сейчас</button>

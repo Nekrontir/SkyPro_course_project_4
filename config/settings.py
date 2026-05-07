@@ -63,7 +63,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'message_broadcasting' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -135,6 +135,17 @@ STATICFILES_DIRS = [
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/1',  # база данных №1, можно 0
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'mailing',
+    }
+}
+
 SITE_ID = 1
 
 AUTHENTICATION_BACKENDS = [
@@ -147,7 +158,7 @@ ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'  # обязательное подтверждение
 ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_USERNAME_REQUIRED = False          # отключаем логин
-LOGIN_REDIRECT_URL = 'mailing:mailing_list'
-LOGOUT_REDIRECT_URL = 'mailing:mailing_list'                 
+LOGIN_REDIRECT_URL = 'mailing:home'
+LOGOUT_REDIRECT_URL = 'mailing:mailing_list'
 
 DEFAULT_FROM_EMAIL = 'webmaster@localhost'

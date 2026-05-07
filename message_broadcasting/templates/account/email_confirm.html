@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Подтверждение email{% endblock %}
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4">
+        <h1>Подтверждение email</h1>
+        <p>Пожалуйста, подтвердите, что адрес <strong>{{ confirmation.email_address.email }}</strong> принадлежит вам.</p>
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">Подтвердить</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

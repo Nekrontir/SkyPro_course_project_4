@@ -30,6 +30,12 @@
             {% endif %}
         </td>
         <td>
+            {% if request.user.profile.is_manager and mailing.status != 'finished' %}
+            <form method="post" action="{% url 'mailing:mailing_deactivate' mailing.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-danger" title="Принудительно завершить">⏹️</button>
+            </form>
+            {% endif %}
             <a href="{% url 'mailing:mailing_detail' mailing.pk %}" class="btn btn-sm btn-outline-info" title="Просмотр">👁️</a>
             <a href="{% url 'mailing:mailing_update' mailing.pk %}" class="btn btn-sm btn-outline-primary" title="Редактировать">✏️</a>
             <a href="{% url 'mailing:mailing_delete' mailing.pk %}" class="btn btn-sm btn-outline-danger" title="Удалить">🗑️</a>

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block title %}Главная страница{% endblock %}
+
+{% block content %}
+<h1>Добро пожаловать, {{ user.email }}!</h1>
+
+<div class="row mt-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-header">Всего рассылок</div>
+            <div class="card-body">
+                <h5 class="card-title display-4">{{ total_mailings }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-header">Активных рассылок</div>
+            <div class="card-body">
+                <h5 class="card-title display-4">{{ active_mailings }}</h5>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-header">Уникальных получателей</div>
+            <div class="card-body">
+                <h5 class="card-title display-4">{{ unique_recipients }}</h5>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
