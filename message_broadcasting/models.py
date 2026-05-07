@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.models import User
 
 # Create your models here.
 
@@ -8,6 +9,7 @@ class MailingRecipient(models.Model):
     email = models.EmailField(unique=True, max_length=254, verbose_name= "Email")
     full_name = models.CharField(max_length=100, verbose_name= "Ф.И.О")
     comment = models.TextField(blank=True, verbose_name= "Комментарий")
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Владелец")
 
     class Meta:
         verbose_name = "Получатель"
@@ -21,6 +23,7 @@ class Message(models.Model):
     topic = models.CharField(max_length=100, verbose_name="Тема письма")
     body = models.TextField(blank=True, verbose_name="Тело письма")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Создано")
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Владелец")
 
     class Meta:
         verbose_name = "Сообщение"
@@ -56,6 +59,7 @@ class Mailing(models.Model):
         verbose_name="Сообщение"
     )
     recipients = models.ManyToManyField(MailingRecipient, verbose_name="Получатели")
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Владелец")
 
     class Meta:
         verbose_name = "Рассылка"
@@ -88,3 +92,13 @@ class Mailing(models.Model):
 
     def __str__(self):
         return f"Рассылка от {self.start_time} ({self.status_display})"
+
+class Attempt(models.Model):
+    mailing = models.ForeignKey(Mailing, on_delete=models.CASCADE, related_name='attempts')
+    attempt_time = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[('success', 'Успешно'), ('failure', 'Не успешно')],
+        verbose_name="Статус попытки"
+    )
+server_response = models.TextField(blank=True, verbose_name="Ответ сервера")

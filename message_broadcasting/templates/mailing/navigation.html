@@ -8,10 +8,10 @@
             <ul class="navbar-nav ms-auto">
                 {% if user.is_authenticated %}
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'mailing_list' %}">Рассылки</a>
+                    <a class="nav-link" href="{% url 'mailing:recipient_list' %}">Рассылки</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'recipient_list' %}">Клиенты</a>
+                    <a class="nav-link" href="{% url 'mailing:recipient_list' %}">Клиенты</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'message_list' %}">Сообщения</a>
